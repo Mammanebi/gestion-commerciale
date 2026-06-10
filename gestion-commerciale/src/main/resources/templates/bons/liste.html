@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Bons de sortie</title>
+	<link rel="stylesheet" th:href="@{/css/responsive.css}"/>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css" rel="stylesheet"/>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/js/select2.min.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:Arial,sans-serif; background:#f0f2f5; }
+        .navbar { background:#1a1a2e; color:white; padding:1rem 2rem;
+            display:flex; justify-content:space-between; align-items:center; }
+        .navbar a { color:#aaa; text-decoration:none;
+            margin-left:1rem; font-size:0.9rem; }
+        .navbar a:hover { color:white; }
+        .content { padding:2rem; max-width:1100px; margin:0 auto; }
+        h2 { color:#1a1a2e; margin-bottom:1.5rem; }
+
+        /* KPI */
+        .kpi-row { display:grid; grid-template-columns:repeat(3,1fr);
+            gap:1rem; margin-bottom:1.5rem; }
+        .kpi { background:white; border-radius:12px; padding:1rem 1.5rem;
+            display:flex; align-items:center; gap:1rem;
+            box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+        .kpi-icon { width:44px; height:44px; border-radius:10px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:1.3rem; flex-shrink:0; }
+        .kpi-val { font-size:1.4rem; font-weight:700; color:#1a1a2e; }
+        .kpi-lbl { font-size:0.78rem; color:#888; margin-top:2px; }
+
+        /* Tabs */
+        .tabs { display:flex; gap:0.5rem; margin-bottom:1rem; }
+        .tab { padding:0.5rem 1.2rem; border-radius:8px; cursor:pointer;
+            font-size:0.88rem; border:1.5px solid transparent;
+            background:white; color:#666; }
+        .tab.active { background:#1a1a2e; color:white; border-color:#1a1a2e; }
+        .tab-content { display:none; }
+        .tab-content.active { display:block; }
+
+        .card { background:white; border-radius:12px; padding:1.5rem;
+            box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+        .card h3 { margin-bottom:1rem; color:#333; font-size:1rem; }
+
+        table { width:100%; border-collapse:collapse; font-size:0.86rem; }
+        th { text-align:left; padding:0.6rem 1rem;
+            background:#f8f9fa; color:#666; font-weight:500; }
+        td { padding:0.6rem 1rem; border-bottom:1px solid #f0f0f0;
+            vertical-align:middle; }
+        tr:last-child td { border-bottom:none; }
+
+        .badge { display:inline-block; padding:3px 10px;
+            border-radius:12px; font-size:0.75rem; font-weight:500; }
+        .badge-transfert { background:#e3e8ff; color:#4361ee; }
+        .badge-livraison  { background:#fff3cd; color:#856404; }
+        .badge-rejete     { background:#ffe0e0; color:#c0392b; }
+
+        .btn { padding:0.35rem 0.9rem; border-radius:8px;
+            text-decoration:none; font-size:0.82rem;
+            display:inline-block; }
+        .btn-print  { background:#1a1a2e; color:white; }
+        .btn-print:hover { background:#4361ee; }
+
+        .empty { text-align:center; color:#999;
+            padding:2.5rem; font-size:0.9rem; }
+
+        /* Filtre recherche */
+        .filter-bar { display:flex; gap:0.8rem;
+            margin-bottom:1rem; align-items:center; }
+        .filter-bar input { padding:0.45rem 0.8rem; border:1px solid #ddd;
+            border-radius:8px; font-size:0.88rem; flex:1; outline:none; }
+        .filter-bar select { padding:0.45rem 0.8rem; border:1px solid #ddd;
+            border-radius:8px; font-size:0.88rem; outline:none; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <span style="font-weight:500;">🏪 Gestion Commerciale</span>
+    <div>
+        <a th:href="@{/dashboard}">Dashboard</a>
+        <a th:href="@{/mouvements}">Mouvements</a>
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+            <input type="hidden"
+                   th:name="${_csrf.parameterName}"
+                   th:value="${_csrf.token}"/>
+            <button type="submit"
+                    style="background:none; border:none; color:#aaa;
+                           cursor:pointer; font-size:0.9rem; padding:0;">
+                Déconnexion
+            </button>
+        </form>
+    </div>
+</nav>
+
+<div class="content">
+    <h2>📋 Bons de sortie</h2>
+
+    <!-- KPIs -->
+    <div class="kpi-row">
+        <div class="kpi">
+            <div class="kpi-icon" style="background:#e3e8ff;">📋</div>
+            <div>
+                <div class="kpi-val" th:text="${totalBons}">0</div>
+                <div class="kpi-lbl">Total bons approuvés</div>
+            </div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-icon" style="background:#e0f7ea;">🔄</div>
+            <div>
+                <div class="kpi-val" th:text="${totalTransferts}">0</div>
+                <div class="kpi-lbl">Transferts boutique</div>
+            </div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-icon" style="background:#fff3cd;">🚛</div>
+            <div>
+                <div class="kpi-val" th:text="${totalLivraisons}">0</div>
+                <div class="kpi-lbl">Livraisons client</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('approuves', this)">
+            ✅ Approuvés
+            <span th:text="'(' + ${totalBons} + ')'"></span>
+        </div>
+        <div class="tab" onclick="switchTab('rejetes', this)">
+            ❌ Rejetés
+            <span th:text="'(' + ${rejets.size()} + ')'"></span>
+        </div>
+    </div>
+
+    <!-- TAB Approuvés -->
+    <div id="tab-approuves" class="tab-content active">
+        <div class="card">
+
+            <!-- Barre de filtre -->
+            <div class="filter-bar">
+                <input type="text" id="searchBon"
+                       placeholder="🔍 Rechercher par numéro, article, responsable..."
+                       oninput="filtrerTableau()"/>
+                <select id="filterType" onchange="filtrerTableau()">
+                    <option value="">Tous les types</option>
+                    <option value="APPROVISIONNEMENT_BOUTIQUE">
+                        Transfert boutique
+                    </option>
+                    <option value="LIVRAISON_CLIENT">
+                        Livraison client
+                    </option>
+                </select>
+            </div>
+
+            <table id="tableBons">
+                <thead>
+                    <tr>
+                        <th>Numéro</th>
+                        <th>Type</th>
+                        <th>Article</th>
+                        <th>Source</th>
+                        <th>Destination</th>
+                        <th>Quantité</th>
+                        <th>Responsable</th>
+                        <th>Date</th>
+                        <th>PDF</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="bon : ${bons}"
+                        th:attr="data-search=${bon.numero}
+                            + ' ' + ${bon.mouvement.stock.article.designation}
+                            + ' ' + ${bon.responsable.nom},
+                            data-type=${bon.mouvement.typeMouvement}">
+
+                        <td style="font-family:monospace; font-size:0.82rem;"
+                            th:text="${bon.numero}"></td>
+
+                        <td>
+                            <span th:if="${bon.mouvement.typeMouvement
+                                          == 'APPROVISIONNEMENT_BOUTIQUE'}"
+                                  class="badge badge-transfert">
+                                🔄 Transfert
+                            </span>
+                            <span th:if="${bon.mouvement.typeMouvement
+                                          == 'LIVRAISON_CLIENT'}"
+                                  class="badge badge-livraison">
+                                🚛 Livraison
+                            </span>
+                            <span th:if="${bon.mouvement.typeMouvement == null
+                                or (bon.mouvement.typeMouvement
+                                    != 'APPROVISIONNEMENT_BOUTIQUE'
+                                    and bon.mouvement.typeMouvement
+                                    != 'LIVRAISON_CLIENT')}"
+                                  class="badge"
+                                  style="background:#f0f0f0; color:#666;">
+                                Sortie
+                            </span>
+                        </td>
+
+                        <td>
+                            <span style="font-size:0.75rem; color:#999;"
+                                  th:text="${bon.mouvement.stock
+                                             .article.reference}">
+                            </span><br/>
+                            <span th:text="${bon.mouvement.stock
+                                             .article.designation}">
+                            </span>
+                        </td>
+
+                        <td th:text="${bon.mouvement.stock.local.nom}"></td>
+
+                        <td>
+                            <span th:if="${bon.mouvement.localDestination != null}"
+                                  th:text="${bon.mouvement.localDestination.nom}">
+                            </span>
+                            <span th:if="${bon.mouvement.localDestination == null}"
+                                  style="color:#999; font-size:0.82rem;">
+                                Client
+                            </span>
+                        </td>
+
+                        <td th:text="${bon.mouvement.quantite}
+                            + ' ' + ${bon.mouvement.stock.article.unite}">
+                        </td>
+
+                        <td th:text="${bon.responsable.prenom}
+                            + ' ' + ${bon.responsable.nom}">
+                        </td>
+
+                        <td th:text="${#temporals.format(
+                            bon.dateApprobation, 'dd/MM/yyyy HH:mm')}">
+                        </td>
+
+                        <td>
+                            <a th:href="@{/pdf/bon-sortie/{id}(id=${bon.id})}"
+                               target="_blank" class="btn btn-print">
+                                🖨️ Imprimer
+                            </a>
+                        </td>
+                    </tr>
+                    <tr th:if="${bons.empty}">
+                        <td colspan="9" class="empty">
+                            Aucun bon de sortie approuvé.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB Rejetés -->
+    <div id="tab-rejetes" class="tab-content">
+        <div class="card">
+            <h3>Demandes rejetées</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Article</th>
+                        <th>Local source</th>
+                        <th>Quantité</th>
+                        <th>Demandé par</th>
+                        <th>Motif rejet</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="m : ${rejets}">
+                        <td th:text="${m.stock.article.designation}"></td>
+                        <td th:text="${m.stock.local.nom}"></td>
+                        <td th:text="${m.quantite}
+                            + ' ' + ${m.stock.article.unite}"></td>
+                        <td th:text="${m.utilisateur.prenom}
+                            + ' ' + ${m.utilisateur.nom}"></td>
+                        <td th:text="${m.motif}"></td>
+                        <td th:text="${#temporals.format(
+                            m.dateMouvement, 'dd/MM/yyyy HH:mm')}">
+                        </td>
+                    </tr>
+                    <tr th:if="${rejets.empty}">
+                        <td colspan="6" class="empty">
+                            Aucune demande rejetée.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(name, el) {
+    document.querySelectorAll('.tab-content').forEach(t =>
+        t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t =>
+        t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    el.classList.add('active');
+}
+
+function filtrerTableau() {
+    const terme  = document.getElementById('searchBon')
+        .value.toLowerCase();
+    const type   = document.getElementById('filterType').value;
+    const lignes = document.querySelectorAll('#tableBons tbody tr[data-search]');
+
+    lignes.forEach(tr => {
+        const search = (tr.getAttribute('data-search') || '').toLowerCase();
+        const trType = tr.getAttribute('data-type') || '';
+        const matchSearch = !terme || search.includes(terme);
+        const matchType   = !type  || trType === type;
+        tr.style.display  = (matchSearch && matchType) ? '' : 'none';
+    });
+}
+</script>
+<script>
+$(document).ready(function() {
+    $('#selectArticle').select2({
+        placeholder: 'Tapez pour rechercher un article...',
+        allowClear: true,
+        width: '100%'
+    });
+});
+</script>
+</body>
+</html>

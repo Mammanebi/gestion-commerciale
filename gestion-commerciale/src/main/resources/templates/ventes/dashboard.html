@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+	<link rel="stylesheet" th:href="@{/css/responsive.css}"/>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+        .navbar {
+            background: #1a1a2e;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar h1 { font-size: 1.1rem; }
+        .navbar a {
+            color: #aaa;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .navbar a:hover { color: white; }
+        .content {
+            padding: 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .welcome {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+        .welcome h2 { color: #1a1a2e; margin-bottom: 0.3rem; }
+        .welcome p { color: #666; font-size: 0.9rem; }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+        }
+        .card:hover { border-color: #4361ee; }
+        .card .icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .card h3 { font-size: 0.95rem; color: #1a1a2e; }
+        .card p { font-size: 0.8rem; color: #999; margin-top: 0.2rem; }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <h1>Gestion Commerciale</h1>
+    <div>
+        <span sec:authentication="name" style="color:white; margin-right:1rem;"></span>
+		<form th:action="@{/logout}" method="post" style="display:inline;">
+		    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+		    <button type="submit" style="background:none; border:none; color:#aaa; 
+		            cursor:pointer; font-size:0.9rem; padding:0;">
+		        Déconnexion
+		    </button>
+		</form>
+    </div>
+</nav>
+<div class="content">
+    <div class="welcome">
+        <h2>Bienvenue 👋</h2>
+        <p>Sélectionnez un module pour commencer</p>
+    </div>
+    <div class="cards">
+        <div class="card" onclick="window.location='/articles/stock'">
+            <div class="icon">📦</div>
+            <h3>Stock</h3>
+            <p>Gérer les magasins</p>
+        </div>
+        <div class="card" onclick="window.location='/articles'">
+            <div class="icon">🗂️</div>
+            <h3>Articles</h3>
+            <p>Gérer les articles</p>
+        </div>
+        <div class="card" onclick="window.location='/mouvements'">
+            <div class="icon">✅</div>
+            <h3>Approbations</h3>
+            <p>Bons de sortie</p>
+        </div>
+        <div class="card" onclick="window.location='/ventes'">
+            <div class="icon">🛒</div>
+            <h3>Ventes</h3>
+            <p>Gérer les boutiques</p>
+        </div>
+        <div class="card">
+            <div class="icon">📊</div>
+            <h3>Rapports</h3>
+            <p>Encaissements</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

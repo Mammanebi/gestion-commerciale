@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Panier de réception</title>
+	<link rel="stylesheet" th:href="@{/css/responsive.css}"/>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css" rel="stylesheet"/>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/js/select2.min.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:Arial,sans-serif; background:#f0f2f5; }
+        .navbar { background:#1a1a2e; color:white; padding:1rem 2rem;
+            display:flex; justify-content:space-between; align-items:center; }
+        .navbar a { color:#aaa; text-decoration:none; font-size:0.9rem; margin-left:1rem; }
+        .content { padding:2rem; max-width:1100px; margin:0 auto; }
+        h2 { color:#1a1a2e; margin-bottom:0.3rem; }
+        .subtitle { color:#666; font-size:0.9rem; margin-bottom:1.5rem; }
+        .grid { display:grid; grid-template-columns:1fr 1.6fr; gap:1.5rem; }
+        .card { background:white; border-radius:12px; padding:1.5rem;
+            box-shadow:0 1px 4px rgba(0,0,0,0.06); margin-bottom:1rem; }
+        .card h3 { margin-bottom:1rem; color:#333; font-size:1rem; }
+        .form-group { margin-bottom:1rem; display:flex; flex-direction:column; gap:0.3rem; }
+        label { font-size:0.8rem; color:#666; }
+        input, select { padding:0.5rem 0.8rem; border:1px solid #ddd;
+            border-radius:8px; font-size:0.9rem; width:100%; outline:none; }
+        input:focus, select:focus { border-color:#4361ee; }
+        .btn { padding:0.5rem 1rem; border:none; border-radius:8px;
+            cursor:pointer; font-size:0.85rem; text-decoration:none;
+            display:inline-block; text-align:center; }
+        .btn-primary { background:#4361ee; color:white; width:100%; padding:0.6rem; }
+        .btn-success { background:#27ae60; color:white; width:100%; padding:0.7rem; }
+        .btn-danger  { background:#e74c3c; color:white; }
+        .btn-sm { padding:0.3rem 0.7rem; font-size:0.78rem; }
+        .alert-success { background:#d4edda; color:#155724;
+            padding:0.8rem; border-radius:8px; margin-bottom:1rem; }
+        .alert-danger { background:#ffe0e0; color:#c0392b;
+            padding:0.8rem; border-radius:8px; margin-bottom:1rem; }
+        table { width:100%; border-collapse:collapse; font-size:0.88rem; }
+        th { text-align:left; padding:0.6rem 1rem; background:#f8f9fa; color:#666; }
+        td { padding:0.6rem 1rem; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+        .total-bar { background:#1a1a2e; color:white; padding:1rem;
+            border-radius:10px; display:flex; justify-content:space-between;
+            margin-bottom:1rem; font-size:0.95rem; }
+        .empty { text-align:center; color:#999; padding:2rem; }
+        /* Recherche article */
+        .search-box { position:relative; }
+        .search-box input { padding-right:2rem; }
+        #articleSearch { margin-bottom:0.3rem; }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <span style="font-weight:500;">🏪 Gestion Commerciale</span>
+    <div>
+        <a th:href="@{/receptions}">← Réceptions</a>
+        <a th:href="@{/dashboard}">Dashboard</a>
+    </div>
+</nav>
+<div class="content">
+    <h2>📦 Panier de réception</h2>
+    <p class="subtitle"
+       th:text="'Magasin : ' + ${reception.local.nom}
+           + ' — ' + ${reception.lignes.size()} + ' article(s) dans le panier'">
+    </p>
+
+    <div class="alert-success" th:if="${succes}" th:text="${succes}"></div>
+    <div class="alert-danger"  th:if="${erreur}" th:text="${erreur}"></div>
+
+    <div class="grid">
+
+        <!-- Formulaire ajout article -->
+        <div>
+            <div class="card">
+                <h3>Ajouter un article</h3>
+                <form th:action="@{/receptions/panier/{id}/ajouter(id=${reception.id})}"
+                      method="post">
+
+                    <div class="form-group">
+                        <label>Rechercher un article</label>
+                        <input type="text" id="articleSearch"
+                               placeholder="Tapez pour filtrer..."
+                               oninput="filtrerArticles(this.value)"
+                               autocomplete="off"/>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Article</label>
+                        <select name="articleId" id="articleSelect" required>
+                            <option value="">-- Choisir un article --</option>
+                            <option th:each="a : ${articles}"
+                                    th:value="${a.id}"
+                                    th:text="${a.reference} + ' — ' + ${a.designation}"
+                                    th:attr="data-nom=${a.designation},
+                                             data-ref=${a.reference}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Quantité reçue</label>
+                        <input type="number" name="quantite"
+                               min="1" required placeholder="Ex: 100"/>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Prix achat unitaire (FCFA) — optionnel</label>
+                        <input type="number" name="prixAchat"
+                               step="0.01" min="0"
+                               placeholder="Laisser vide = prix existant"/>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        ➕ Ajouter au panier
+                    </button>
+                </form>
+            </div>
+
+            <!-- Infos réception -->
+            <div class="card">
+                <h3>Informations réception</h3>
+                <form th:action="@{/receptions/panier/{id}/valider(id=${reception.id})}"
+                      method="post">
+                    <div class="form-group">
+                        <label>Fournisseur</label>
+                        <input type="text" name="fournisseur"
+                               placeholder="Ex: Guangzhou Trading Co."/>
+                    </div>
+                    <div class="form-group">
+                        <label>Référence bon commande</label>
+                        <input type="text" name="reference"
+                               placeholder="Ex: BC-2025-001"/>
+                    </div>
+                    <button type="submit" class="btn btn-success"
+                            th:disabled="${reception.lignes.empty}"
+                            onclick="return confirm('Valider la réception ? Le stock sera mis à jour.')">
+                        ✅ Valider la réception
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Panier -->
+        <div class="card">
+            <div class="total-bar">
+                <span>Articles dans le panier</span>
+                <strong th:text="${reception.lignes.size()} + ' référence(s)'"></strong>
+            </div>
+
+            <div th:if="${reception.lignes.empty}" class="empty">
+                Aucun article ajouté. Commencez par ajouter des articles.
+            </div>
+
+            <table th:if="${!reception.lignes.empty}">
+                <thead>
+                    <tr>
+                        <th>Référence</th>
+                        <th>Désignation</th>
+                        <th>Qté</th>
+                        <th>Prix achat</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="ligne : ${reception.lignes}">
+                        <td th:text="${ligne.article.reference}"
+                            style="font-family:monospace; font-size:0.82rem;">
+                        </td>
+                        <td th:text="${ligne.article.designation}"></td>
+                        <td th:text="${ligne.quantite}
+                            + ' ' + ${ligne.article.unite}"></td>
+                        <td th:text="${ligne.prixAchat != null
+                            ? #numbers.formatDecimal(ligne.prixAchat,0,'COMMA',0,'POINT') + ' FCFA'
+                            : '-'}">
+                        </td>
+                        <td>
+                            <a th:href="@{/receptions/panier/{rid}/supprimer/{lid}(rid=${reception.id},lid=${ligne.id})}"
+                               class="btn btn-danger btn-sm"
+                               onclick="return confirm('Retirer cet article ?')">
+                                ✕
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function filtrerArticles(recherche) {
+    const select = document.getElementById('articleSelect');
+    const options = select.querySelectorAll('option');
+    const terme = recherche.toLowerCase().trim();
+
+    options.forEach(opt => {
+        if (opt.value === '') {
+            opt.style.display = '';
+            return;
+        }
+        const nom = (opt.getAttribute('data-nom') || '').toLowerCase();
+        const ref = (opt.getAttribute('data-ref') || '').toLowerCase();
+        opt.style.display =
+            (terme === '' || nom.includes(terme) || ref.includes(terme))
+            ? '' : 'none';
+    });
+
+    // Réinitialiser la sélection si l'option sélectionnée est masquée
+    if (select.selectedOptions[0]
+            && select.selectedOptions[0].style.display === 'none') {
+        select.value = '';
+    }
+}
+</script>
+<script>
+$(document).ready(function() {
+    $('#selectArticle').select2({
+        placeholder: 'Tapez pour rechercher un article...',
+        allowClear: true,
+        width: '100%'
+    });
+});
+</script>
+</body>
+</html>

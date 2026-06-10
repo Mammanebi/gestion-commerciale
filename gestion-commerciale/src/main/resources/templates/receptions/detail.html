@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Détail réception</title>
+	<link rel="stylesheet" th:href="@{/css/responsive.css}"/>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css" rel="stylesheet"/>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/js/select2.min.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:Arial,sans-serif; background:#f0f2f5; }
+        .navbar { background:#1a1a2e; color:white; padding:1rem 2rem;
+            display:flex; justify-content:space-between; align-items:center; }
+        .navbar a { color:#aaa; text-decoration:none; font-size:0.9rem; margin-left:1rem; }
+        .content { padding:2rem; max-width:900px; margin:0 auto; }
+        h2 { color:#1a1a2e; margin-bottom:0.3rem; }
+        .subtitle { color:#666; font-size:0.9rem; margin-bottom:1.5rem; }
+        .card { background:white; border-radius:12px; padding:1.5rem;
+            box-shadow:0 1px 4px rgba(0,0,0,0.06); margin-bottom:1.5rem; }
+        .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;
+            margin-bottom:1rem; }
+        .info-item { font-size:0.88rem; }
+        .info-item span:first-child { color:#666; font-size:0.8rem; display:block; }
+        table { width:100%; border-collapse:collapse; font-size:0.88rem; }
+        th { text-align:left; padding:0.6rem 1rem; background:#f8f9fa; color:#666; }
+        td { padding:0.6rem 1rem; border-bottom:1px solid #f0f0f0; }
+        .btn { padding:0.6rem 1.5rem; border-radius:8px; text-decoration:none;
+            font-size:0.9rem; display:inline-block; background:#1a1a2e; color:white; }
+        .badge-validee { background:#d4edda; color:#155724;
+            padding:3px 10px; border-radius:12px; font-size:0.8rem; }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <span style="font-weight:500;">🏪 Gestion Commerciale</span>
+    <div>
+        <a th:href="@{/receptions}">← Réceptions</a>
+        <a th:href="@{/dashboard}">Dashboard</a>
+    </div>
+</nav>
+<div class="content">
+    <h2>📦 Réception validée</h2>
+    <p class="subtitle">
+        <span class="badge-validee">✅ Validée</span>
+        &nbsp;
+        <span th:text="${#temporals.format(reception.dateReception,'dd/MM/yyyy HH:mm')}"></span>
+    </p>
+
+    <div class="card">
+        <div class="info-grid">
+            <div class="info-item">
+                <span>Magasin</span>
+                <strong th:text="${reception.local.nom}"></strong>
+            </div>
+            <div class="info-item">
+                <span>Réceptionné par</span>
+                <strong th:text="${reception.utilisateur.prenom}
+                    + ' ' + ${reception.utilisateur.nom}"></strong>
+            </div>
+            <div class="info-item" th:if="${reception.fournisseur != null}">
+                <span>Fournisseur</span>
+                <strong th:text="${reception.fournisseur}"></strong>
+            </div>
+            <div class="info-item" th:if="${reception.reference != null}">
+                <span>Référence commande</span>
+                <strong th:text="${reception.reference}"></strong>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Référence</th>
+                    <th>Désignation</th>
+                    <th>Unité</th>
+                    <th>Qté reçue</th>
+                    <th>Prix achat</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="ligne : ${reception.lignes}">
+                    <td th:text="${ligne.article.reference}"
+                        style="font-family:monospace;"></td>
+                    <td th:text="${ligne.article.designation}"></td>
+                    <td th:text="${ligne.article.unite}"></td>
+                    <td th:text="${ligne.quantite}"></td>
+                    <td th:text="${ligne.prixAchat != null
+                        ? #numbers.formatDecimal(ligne.prixAchat,0,'COMMA',0,'POINT') + ' FCFA'
+                        : '-'}">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="margin-top:1.5rem;">
+            <a th:href="@{/pdf/bon-reception-groupe/{id}(id=${reception.id})}"
+               target="_blank" class="btn">
+                🖨️ Imprimer le bon de réception
+            </a>
+        </div>
+    </div>
+</div>
+<script>
+$(document).ready(function() {
+    $('#selectArticle').select2({
+        placeholder: 'Tapez pour rechercher un article...',
+        allowClear: true,
+        width: '100%'
+    });
+});
+</script>
+</body>
+</html>

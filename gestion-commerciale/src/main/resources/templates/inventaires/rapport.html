@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport inventaire</title>
+    <link rel="stylesheet" th:href="@{/css/responsive.css}"/>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:Arial,sans-serif; background:#f0f2f5; }
+        .navbar { background:#1a1a2e; color:white; padding:1rem 2rem;
+            display:flex; justify-content:space-between; align-items:center; }
+        .navbar a { color:#aaa; text-decoration:none;
+            font-size:0.9rem; margin-left:1rem; }
+        .content { padding:2rem; max-width:1000px; margin:0 auto; }
+        h2 { color:#1a1a2e; margin-bottom:0.3rem; }
+        .subtitle { color:#666; font-size:0.9rem; margin-bottom:1.5rem; }
+        .card { background:white; border-radius:12px; padding:1.5rem;
+            box-shadow:0 1px 4px rgba(0,0,0,0.06); margin-bottom:1rem; }
+        .kpi-row { display:grid; grid-template-columns:repeat(4,1fr);
+            gap:1rem; margin-bottom:1.5rem; }
+        .kpi { background:white; border-radius:12px; padding:1rem;
+            text-align:center; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+        .kpi-val { font-size:1.3rem; font-weight:700; color:#1a1a2e; }
+        .kpi-lbl { font-size:0.75rem; color:#888; margin-top:3px; }
+        table { width:100%; border-collapse:collapse; font-size:0.88rem; }
+        th { text-align:left; padding:0.7rem 1rem;
+            background:#f8f9fa; color:#666; }
+        td { padding:0.6rem 1rem; border-bottom:1px solid #f0f0f0; }
+        .ecart-pos { color:#27ae60; font-weight:600; }
+        .ecart-neg { color:#e74c3c; font-weight:600; }
+        .ecart-zero { color:#999; }
+        .btn-print { padding:0.7rem 1.5rem; background:#1a1a2e;
+            color:white; border:none; border-radius:8px;
+            cursor:pointer; font-size:0.9rem; text-decoration:none;
+            display:inline-block; }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <span style="font-weight:500;">🏪 Gestion Commerciale</span>
+    <div>
+        <a th:href="@{/inventaires}">← Inventaires</a>
+        <a th:href="@{/dashboard}">Dashboard</a>
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+            <input type="hidden"
+                   th:name="${_csrf.parameterName}"
+                   th:value="${_csrf.token}"/>
+            <button type="submit" style="background:none; border:none;
+                    color:#aaa; cursor:pointer; font-size:0.9rem;">
+                Déconnexion
+            </button>
+        </form>
+    </div>
+</nav>
+
+<div class="content">
+    <h2 th:text="'Rapport inventaire — ' + ${inventaire.local.nom}"></h2>
+    <p class="subtitle"
+       th:text="${inventaire.type}
+           + ' — Validé le '
+           + ${#temporals.format(
+               inventaire.dateValidation,'dd/MM/yyyy HH:mm')}">
+    </p>
+
+    <!-- KPIs résumé -->
+    <!-- div class="kpi-row">
+        <div class="kpi">
+            <div class="kpi-val"
+                 th:text="${inventaire.lignes.size()}"></div>
+            <div class="kpi-lbl">Articles inventoriés</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-val" style="color:#e74c3c;"
+                 th:text="${inventaire.lignes.stream()
+                     .filter(l -> l.ecart != null and l.ecart < 0)
+                     .count()}">
+            </div>
+            <div class="kpi-lbl">Articles en manque</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-val" style="color:#27ae60;"
+                 th:text="${inventaire.lignes.stream()
+                     .filter(l -> l.ecart != null and l.ecart > 0)
+                     .count()}">
+            </div>
+            <div class="kpi-lbl">Articles en surplus</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-val"
+                 th:text="${inventaire.lignes.stream()
+                     .filter(l -> l.ecart != null and l.ecart == 0)
+                     .count()}">
+            </div>
+            <div class="kpi-lbl">Articles conformes</div>
+        </div>
+    </div -->
+	
+	
+	<div class="kpi-row">
+	    <div class="kpi">
+	        <div class="kpi-val"
+	             th:text="${inventaire.lignes.size()}"></div>
+	        <div class="kpi-lbl">Articles inventoriés</div>
+	    </div>
+
+	    <div class="kpi">
+	        <div class="kpi-val" style="color:#e74c3c;"
+	             th:text="${inventaire.lignes.?[ecart != null and ecart < 0].size()}">
+	        </div>
+	        <div class="kpi-lbl">Articles en manque</div>
+	    </div>
+
+	    <div class="kpi">
+	        <div class="kpi-val" style="color:#27ae60;"
+	             th:text="${inventaire.lignes.?[ecart != null and ecart > 0].size()}">
+	        </div>
+	        <div class="kpi-lbl">Articles en surplus</div>
+	    </div>
+
+	    <div class="kpi">
+	        <div class="kpi-val"
+	             th:text="${inventaire.lignes.?[ecart != null and ecart == 0].size()}">
+	        </div>
+	        <div class="kpi-lbl">Articles conformes</div>
+	    </div>
+	</div>
+
+    <!-- Tableau rapport -->
+    <div class="card">
+        <div style="display:flex; justify-content:space-between;
+                    align-items:center; margin-bottom:1rem;">
+            <h3>Détail de l'inventaire</h3>
+            <a th:href="@{/pdf/inventaire/{id}(id=${inventaire.id})}"
+               target="_blank" class="btn-print">
+                🖨️ Imprimer le rapport PDF
+            </a>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Référence</th>
+                    <th>Désignation</th>
+                    <th>Unité</th>
+                    <th>Qté théorique</th>
+                    <th>Qté réelle</th>
+                    <th>Écart</th>
+                    <th>Valeur écart (FCFA)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="ligne : ${inventaire.lignes}">
+                    <td style="font-family:monospace; font-size:0.8rem;"
+                        th:text="${ligne.article.reference}"></td>
+                    <td th:text="${ligne.article.designation}"></td>
+                    <td th:text="${ligne.article.unite}"></td>
+                    <td th:text="${ligne.qteTheorique}"></td>
+                    <td th:text="${ligne.qteReelle}"></td>
+                    <td>
+                        <span th:if="${ligne.ecart > 0}"
+                              class="ecart-pos"
+                              th:text="'+' + ${ligne.ecart}"></span>
+                        <span th:if="${ligne.ecart < 0}"
+                              class="ecart-neg"
+                              th:text="${ligne.ecart}"></span>
+                        <span th:if="${ligne.ecart == 0}"
+                              class="ecart-zero">0</span>
+                    </td>
+                    <td th:text="${#numbers.formatDecimal(
+                        ligne.valeurEcart,0,'COMMA',0,'POINT')}"
+                        th:style="${ligne.ecart < 0}
+                            ? 'color:#e74c3c; font-weight:500'
+                            : (${ligne.ecart > 0}
+                                ? 'color:#27ae60; font-weight:500'
+                                : 'color:#999')">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div th:if="${inventaire.observations != null}"
+             style="margin-top:1rem; padding:0.8rem; background:#f8f9fa;
+                    border-radius:8px; font-size:0.85rem; color:#666;">
+            <strong>Observations :</strong>
+            <span th:text="${inventaire.observations}"></span>
+        </div>
+    </div>
+</div>
+</body>
+</html>

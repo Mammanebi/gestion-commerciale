@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+	<link rel="stylesheet" th:href="@{/css/responsive.css}"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+
+        .navbar {
+            background: #1a1a2e; color: white;
+            padding: 1rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .navbar h1 { font-size: 1rem; font-weight: 600; }
+        .navbar-right { display: flex; align-items: center; gap: 1rem; }
+        .navbar a { color: #aaa; text-decoration: none; font-size: 0.85rem; }
+        .navbar a:hover { color: white; }
+        .user-badge {
+            background: #4361ee; color: white;
+            padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem;
+        }
+
+        .content { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+
+        .welcome { margin-bottom: 1.5rem; }
+        .welcome h2 { color: #1a1a2e; font-size: 1.3rem; }
+        .welcome p  { color: #666; font-size: 0.9rem; margin-top: 0.2rem; }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem; margin-bottom: 1.5rem;
+        }
+        .kpi-card {
+            background: white; border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            display: flex; align-items: center; gap: 1rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .kpi-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; flex-shrink: 0;
+        }
+        .kpi-icon.blue   { background: #e3f0ff; }
+        .kpi-icon.green  { background: #e0f7ea; }
+        .kpi-icon.amber  { background: #fff8e1; }
+        .kpi-icon.red    { background: #ffe0e0; }
+        .kpi-icon.purple { background: #f3e5f5; }
+        .kpi-value { font-size: 1.4rem; font-weight: 700; color: #1a1a2e; }
+        .kpi-label { font-size: 0.8rem; color: #888; margin-top: 0.1rem; }
+
+        /* Layout principal */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem; margin-bottom: 1.5rem;
+        }
+
+        .card {
+            background: white; border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .card-header {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 1.2rem;
+        }
+        .card-header h3 { font-size: 0.95rem; color: #1a1a2e; }
+        .card-header a {
+            font-size: 0.8rem; color: #4361ee;
+            text-decoration: none;
+        }
+
+        /* Graphique */
+        .chart-container { position: relative; height: 240px; }
+
+        /* Alertes stock */
+        .alerte-item {
+            display: flex; justify-content: space-between;
+            align-items: center; padding: 0.6rem 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .alerte-item:last-child { border-bottom: none; }
+        .alerte-nom { font-size: 0.85rem; color: #333; }
+        .alerte-local { font-size: 0.75rem; color: #999; }
+        .badge-critique {
+            background: #ffe0e0; color: #c0392b;
+            padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;
+            font-weight: 500; white-space: nowrap;
+        }
+        .badge-ok {
+            background: #e0f7ea; color: #27ae60;
+            padding: 2px 8px; border-radius: 10px; font-size: 0.75rem;
+        }
+
+        /* Modules nav */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+        }
+        .module-card {
+            background: white; border-radius: 12px;
+            padding: 1.2rem; text-align: center;
+            cursor: pointer; text-decoration: none;
+            border: 2px solid transparent;
+            transition: border-color 0.2s, transform 0.1s;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            display: block;
+        }
+        .module-card:hover {
+            border-color: #4361ee;
+            transform: translateY(-2px);
+        }
+        .module-card .icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        .module-card h3 { font-size: 0.9rem; color: #1a1a2e; }
+        .module-card p  { font-size: 0.75rem; color: #999; margin-top: 0.2rem; }
+        .module-card .badge-notif {
+            display: inline-block;
+            background: #e74c3c; color: white;
+            font-size: 0.7rem; padding: 1px 6px;
+            border-radius: 10px; margin-top: 0.3rem;
+        }
+
+        .empty-state {
+            text-align: center; color: #bbb;
+            padding: 2rem; font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <h1>🏪 Gestion Commerciale</h1>
+    <div class="navbar-right">
+        <span class="user-badge">
+            👤 <span sec:authentication="name"></span>
+        </span>
+		<form th:action="@{/logout}" method="post" style="display:inline;">
+		    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+		    <button type="submit" style="background:none; border:none; color:#aaa; 
+		            cursor:pointer; font-size:0.9rem; padding:0;">
+		        Déconnexion
+		    </button>
+		</form>
+    </div>
+</nav>
+
+<div class="content">
+
+    <div class="welcome">
+        <h2>Tableau de bord 📊</h2>
+        <p>Vue d'ensemble de votre activité du jour</p>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-icon green">💰</div>
+            <div>
+                <div class="kpi-value"
+                     th:text="${#numbers.formatDecimal(chiffreJour, 0, 'COMMA', 0, 'POINT')} + ' FCFA'">
+                </div>
+                <div class="kpi-label">Chiffre du jour</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon blue">🛒</div>
+            <div>
+                <div class="kpi-value" th:text="${nbVentesJour}">0</div>
+                <div class="kpi-label">Ventes aujourd'hui</div>
+            </div>
+        </div>
+
+		<div class="kpi-card">
+		    <div class="kpi-icon purple">🏪</div>
+		    <div>
+		        <div class="kpi-val" th:text="${sessionsOuvertes}">0</div>
+		        <div class="kpi-lbl">
+		            Sessions ouvertes
+		            <span th:if="${detailSessionsOuvertes != null
+		                          and !detailSessionsOuvertes.empty}"
+		                  style="display:block; font-size:0.75rem; color:#999;">
+		                <span th:each="s,i : ${detailSessionsOuvertes}"
+		                      th:text="${s.local.nom}
+		                          + (${!i.last} ? ', ' : '')">
+		                </span>
+		            </span>
+		        </div>
+		    </div>
+		</div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon amber">⏳</div>
+            <div>
+                <div class="kpi-value" th:text="${demandesEnAttente}">0</div>
+                <div class="kpi-label">Approbations en attente</div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon red">📦</div>
+            <div>
+                <div class="kpi-value" th:text="${alertesStock.size()}">0</div>
+                <div class="kpi-label">Alertes stock</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphique + Alertes -->
+    <div class="main-grid">
+
+        <!-- Graphique ventes 7 jours -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📈 Ventes des 7 derniers jours</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="ventesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Alertes stock -->
+        <div class="card">
+            <div class="card-header">
+                <h3>⚠️ Alertes stock</h3>
+                <a th:href="@{/articles/stock}">Voir tout →</a>
+            </div>
+
+            <div th:if="${alertesStock.empty}" class="empty-state">
+                ✅ Tous les stocks sont suffisants
+            </div>
+
+            <div th:each="s : ${alertesStock}" class="alerte-item">
+                <div>
+                    <div class="alerte-nom" th:text="${s.article.designation}"></div>
+                    <div class="alerte-local" th:text="${s.local.nom}"></div>
+                </div>
+                <span th:if="${s.quantite == 0}" class="badge-critique">Rupture</span>
+                <span th:if="${s.quantite > 0}" class="badge-critique"
+                      th:text="${s.quantite} + ' ' + ${s.article.unite}">
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modules de navigation -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+            <h3>Modules</h3>
+        </div>
+		<div class="modules-grid">
+
+		    <!-- Articles — tous -->
+		    <a th:href="@{/articles}" class="module-card">
+		        <div class="icon">🗂️</div>
+		        <h3>Articles</h3>
+		        <p th:text="${totalArticles} + ' articles'"></p>
+		    </a>
+
+		    <!-- Stock — tous -->
+		    <a th:href="@{/articles/stock}" class="module-card">
+		        <div class="icon">📦</div>
+		        <h3>Stock</h3>
+		        <p>Gérer les stocks</p>
+		        <span th:if="${alertesStock.size() > 0}"
+		              class="badge-notif"
+		              th:text="${alertesStock.size()} + ' alerte(s)'">
+		        </span>
+		    </a>
+
+		    <!-- Approbations — tous sauf restriction d'action -->
+		    <a th:href="@{/mouvements}" class="module-card">
+		        <div class="icon">✅</div>
+		        <h3>Approbations</h3>
+		        <p>Transferts & sorties</p>
+		        <span th:if="${demandesEnAttente > 0}"
+		              class="badge-notif"
+		              th:text="${demandesEnAttente} + ' en attente'">
+		        </span>
+		    </a>
+
+		    <!-- Ventes — Caissier et Admin uniquement -->
+		    <a th:href="@{/ventes}" class="module-card"
+		       sec:authorize="hasAnyRole('CAISSIER','ADMIN')">
+		        <div class="icon">🛒</div>
+		        <h3>Ventes</h3>
+		        <p>Ouvrir la caisse</p>
+		    </a>
+
+		    <!-- Bons de sortie — tous -->
+		    <a th:href="@{/bons-sortie}" class="module-card">
+		        <div class="icon">🖨️</div>
+		        <h3>Bons de sortie</h3>
+		        <p>Historique & impression</p>
+		    </a>
+
+		    <!-- Livraisons — tous -->
+		    <a th:href="@{/livraisons}" class="module-card">
+		        <div class="icon">🚛</div>
+		        <h3>Livraisons</h3>
+		        <p>Gérer les retraits</p>
+		    </a>
+
+		    <!-- Rapports — Responsable et Admin uniquement -->
+		    <a th:href="@{/pdf/rapport-mensuel/page}" class="module-card"
+		       sec:authorize="hasAnyRole('RESPONSABLE','ADMIN')">
+		        <div class="icon">📊</div>
+		        <h3>Rapports</h3>
+		        <p>Rapport mensuel PDF</p>
+		    </a>
+
+		    <!-- Réceptions — tous -->
+		    <a th:href="@{/receptions}" class="module-card"
+		       sec:authorize="hasAnyRole('MAGASINIER','RESPONSABLE','ADMIN')">
+		        <div class="icon">📦</div>
+		        <h3>Réceptions</h3>
+		        <p>Réceptionner marchandises</p>
+		    </a>
+
+		    <!-- Utilisateurs — Admin uniquement -->
+		    <a th:href="@{/admin/utilisateurs}" class="module-card"
+		       sec:authorize="hasRole('ADMIN')">
+		        <div class="icon">👥</div>
+		        <h3>Utilisateurs</h3>
+		        <p>Gérer les accès</p>
+		    </a>
+			
+			<a th:href="@{/inventaires}" class="module-card"
+			   sec:authorize="hasAnyRole('RESPONSABLE','ADMIN')">
+			    <div class="icon">📋</div>
+			    <h3>Inventaires</h3>
+			    <p>Contrôle des stocks</p>
+			</a>
+
+		</div>
+    </div>
+
+</div>
+
+<!-- Chart.js -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const labels = /*[[${joursLabels}]]*/ [];
+    const data   = /*[[${montantsData}]]*/ [];
+    /*]]>*/
+
+    const ctx = document.getElementById('ventesChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Ventes (FCFA)',
+                data: data,
+                backgroundColor: 'rgba(67, 97, 238, 0.15)',
+                borderColor: 'rgba(67, 97, 238, 0.9)',
+                borderWidth: 2,
+                borderRadius: 6,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx =>
+                            new Intl.NumberFormat('fr-FR').format(ctx.raw) + ' FCFA'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: {
+                        callback: val =>
+                            new Intl.NumberFormat('fr-FR').format(val)
+                    }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
